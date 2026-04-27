@@ -7,7 +7,7 @@ import logging
 import subprocess
 import tempfile
 import os
-from typing import Optional, Dict, Any
+from typing import Dict, Any
 from fastapi import HTTPException
 
 logger = logging.getLogger("shogun.stt")
@@ -20,8 +20,7 @@ class STTEngine:
     """
     
     def __init__(self):
-        self.model_size: Optional[str] = None
-        self.language: Optional[str] = None
+        pass
 
     def _preprocess_audio_with_ffmpeg(self, audio_data: bytes, output_path: str) -> bool:
         """

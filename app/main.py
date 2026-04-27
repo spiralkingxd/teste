@@ -4,7 +4,6 @@ Configuração inicial, servidor de arquivos estáticos e endpoints base.
 """
 
 import json
-import os
 import time
 import logging
 from pathlib import Path
@@ -14,7 +13,7 @@ import httpx
 from fastapi import FastAPI, Request, HTTPException, UploadFile, File, Form
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field
 
 from backend.stt import stt_engine
 
@@ -87,10 +86,7 @@ class ChatInput(BaseModel):
 class STTConfig(BaseModel):
     """Modelo de configuração para STT."""
     model_size: str = "base"
-    compute_type: str = "default"
-    beam_size: int = 5
     language: str = "auto"
-    temperature: float = 0.0
 
 
 # Inicializa a aplicação FastAPI
@@ -279,10 +275,7 @@ async def transcribe_audio(
     
     Configurações suportadas:
     - model_size: tiny, base, small, medium, large-v3
-    - compute_type: int8, float16, default
-    - beam_size: 1-10 (precisão vs velocidade)
     - language: auto, pt, en, etc.
-    - temperature: 0.0-1.0
     """
     import json as json_module
     
@@ -307,25 +300,22 @@ async def transcribe_audio(
 async def unload_stt_model():
     """
     Endpoint POST /api/stt/unload:
-    - Libera a memória VRAM/RAM usada pelo modelo Whisper
-    - Útil para economizar recursos quando não estiver em uso
+    - Não se aplica na implementação com subprocess/CLI
+    - Retorna sucesso para compatibilidade com a UI
     """
-    stt_engine.unload_model()
-    return {"status": "success", "message": "Modelo STT descarregado."}
+    return {"status": "success", "message": "N/A - Implementação CLI não mantém modelo em memória."}
 
 
 @app.get("/api/stt/status")
 async def get_stt_status():
     """
     Endpoint GET /api/stt/status:
-    - Verifica se o modelo está carregado e qual modelo
-    - Retorna status para a UI mostrar indicador
+    - Retorna status básico para implementação CLI
     """
-    is_loaded = stt_engine.model is not None
     return {
-        "loaded": is_loaded,
-        "model_size": stt_engine.current_model_size,
-        "compute_type": stt_engine.compute_type
+        "loaded": True,
+        "model_size": "cli-based",
+        "compute_type": "n/a"
     }
 
 
