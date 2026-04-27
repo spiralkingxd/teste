@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat IA</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Navegação por abas -->
+        <nav class="tabs" role="tablist">
+            <button class="tab-btn active" data-tab="chat" role="tab" aria-selected="true" aria-controls="chat-panel">
+                💬 Chat
+            </button>
+            <button class="tab-btn" data-tab="config" role="tab" aria-selected="false" aria-controls="config-panel">
+                ⚙️ Configurações
+            </button>
+        </nav>
+
+        <!-- Painel Chat -->
+        <section id="chat-panel" class="tab-panel active" role="tabpanel" aria-labelledby="chat-tab">
+            <div id="chat-box" class="chat-box" aria-live="polite">
+                <!-- Mensagens serão inseridas aqui -->
+            </div>
+            <div id="processing-indicator" class="processing-indicator hidden">
+                Processando...
+            </div>
+            <div class="input-area">
+                <input 
+                    type="text" 
+                    id="user-input" 
+                    placeholder="Digite sua mensagem..." 
+                    aria-label="Campo de mensagem"
+                    autocomplete="off"
+                >
+                <button id="send-btn" type="button" aria-label="Enviar mensagem">Enviar</button>
+            </div>
+        </section>
+
+        <!-- Painel Configurações -->
+        <section id="config-panel" class="tab-panel" role="tabpanel" aria-labelledby="config-tab">
+            <form id="config-form" class="config-form">
+                <div class="form-group">
+                    <label for="base-url">Base URL</label>
+                    <input 
+                        type="url" 
+                        id="base-url" 
+                        name="base_url" 
+                        placeholder="http://localhost:1234/v1"
+                        required
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="model">Modelo</label>
+                    <input 
+                        type="text" 
+                        id="model" 
+                        name="model" 
+                        placeholder="nome-do-modelo"
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="api-key">API Key</label>
+                    <input 
+                        type="password" 
+                        id="api-key" 
+                        name="api_key" 
+                        placeholder="Sua chave de API"
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="temperature">Temperatura: <span id="temp-value">0.7</span></label>
+                    <input 
+                        type="range" 
+                        id="temperature" 
+                        name="temperature" 
+                        min="0.0" 
+                        max="1.0" 
+                        step="0.1" 
+                        value="0.7"
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="max-tokens">Max Tokens</label>
+                    <input 
+                        type="number" 
+                        id="max-tokens" 
+                        name="max_tokens" 
+                        min="1" 
+                        max="8192" 
+                        value="1024"
+                    >
+                </div>
+
+                <button type="submit" id="save-config-btn">Salvar Configurações</button>
+            </form>
+            <div id="feedback" class="feedback" role="status" aria-live="polite"></div>
+        </section>
+    </div>
+    <script src="/static/app.js"></script>
+</body>
+</html>
