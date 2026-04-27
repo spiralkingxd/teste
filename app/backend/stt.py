@@ -1,5 +1,5 @@
 """
-Módulo de Speech-to-Text usando FFmpeg via subprocess + Whisper CLI.
+Módulo de Speech-to-Text usando FFmpeg via subprocess + Whisper API Python.
 Implementação com subprocess do FFmpeg para pré-processamento de áudio.
 """
 
@@ -7,6 +7,7 @@ import logging
 import subprocess
 import tempfile
 import os
+import json
 from typing import Dict, Any
 from fastapi import HTTPException
 
@@ -15,12 +16,26 @@ logger = logging.getLogger("shogun.stt")
 
 class STTEngine:
     """
-    Motor de STT usando FFmpeg via subprocess + Whisper.
-    Usa FFmpeg para pré-processamento e Whisper para transcrição.
+    Motor de STT usando FFmpeg via subprocess + Whisper API Python.
+    Usa FFmpeg para pré-processamento e Whisper (API Python) para transcrição.
     """
     
     def __init__(self):
-        pass
+        self.model_cache = {}
+
+    def _get_model(self, model_size: str):
+        """Carrega ou retorna modelo em cache."""
+        import whisper
+        
+        if model_size not in self.model_cache:
+            logger.info(f"Carregando modelo Whisper: {model_size}")
+            try:
+                self.model_cache[model_size] = whisper.load_model(model_size)
+            except Exception as e:
+                logger.error(f"Erro ao carregar modelo {model_size}: {e}")
+                raise HTTPException(status_code=500, detail=f"Falha ao carregar modelo: {str(e)}")
+        
+        return self.model_cache[model_size]
 
     def _preprocess_audio_with_ffmpeg(self, audio_data: bytes, output_path: str) -> bool:
         """
@@ -106,62 +121,26 @@ class STTEngine:
             # Pré-processar áudio com FFmpeg
             self._preprocess_audio_with_ffmpeg(audio_data, temp_file)
             
-            # Construir comando Whisper CLI
-            whisper_cmd = [
-                "whisper",
-                temp_file,
-                "--model", model_size,
-                "--output_format", "json",
-                "--no_print_progress"
-            ]
+            # Carregar modelo e transcrever usando API Python do Whisper
+            model = self._get_model(model_size)
             
+            # Opções de transcrição
+            options = {}
             if whisper_lang:
-                whisper_cmd.extend(["--language", whisper_lang])
+                options["language"] = whisper_lang
             
-            logger.debug(f"Executando Whisper: {' '.join(whisper_cmd)}")
+            logger.debug(f"Transcrevendo com modelo {model_size}, idioma={whisper_lang or 'auto'}")
             
-            result = subprocess.run(
-                whisper_cmd,
-                capture_output=True,
-                text=True,
-                timeout=300
-            )
+            result = model.transcribe(temp_file, **options)
             
-            if result.returncode != 0:
-                logger.error(f"Whisper falhou: {result.stderr}")
-                raise Exception(f"Whisper error: {result.stderr}")
+            text = result.get("text", "").strip()
+            language_detected = result.get("language", "unknown")
             
-            # Parse do output JSON do Whisper
-            import json
-            output_path = temp_file + ".json"
-            
-            if not os.path.exists(output_path):
-                # Tenta encontrar o arquivo JSON em outros locais possíveis
-                base_name = os.path.splitext(temp_file)[0]
-                output_path = base_name + ".json"
-            
-            if os.path.exists(output_path):
-                with open(output_path, 'r', encoding='utf-8') as f:
-                    transcript_data = json.load(f)
-                
-                text = transcript_data.get("text", "").strip()
-                language_detected = transcript_data.get("language", "unknown")
-                
-                # Calcular duração aproximada
-                duration = 0.0
-                if "segments" in transcript_data and transcript_data["segments"]:
-                    last_segment = transcript_data["segments"][-1]
-                    duration = last_segment.get("end", 0.0)
-                
-                # Limpar arquivo JSON
-                if os.path.exists(output_path):
-                    os.unlink(output_path)
-                
-            else:
-                # Fallback: usar stdout se JSON não foi criado
-                text = result.stdout.strip()
-                language_detected = whisper_lang or "auto"
-                duration = 0.0
+            # Calcular duração aproximada
+            duration = 0.0
+            if "segments" in result and result["segments"]:
+                last_segment = result["segments"][-1]
+                duration = last_segment.get("end", 0.0)
             
             return {
                 "text": text,
