@@ -328,6 +328,51 @@ body.dark-mode .icon-moon { display: block; }
     flex-shrink: 0;
     background-color: var(--bg-secondary);
     border-top: 1px solid var(--border-color);
+    align-items: center;
+}
+
+/* Botão de gravação */
+.icon-btn {
+    background: transparent;
+    border: 2px solid var(--border-color);
+    border-radius: 50%;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 1.2rem;
+    transition: all 0.2s ease;
+    color: var(--text-primary);
+    flex-shrink: 0;
+    padding: 0;
+}
+
+.icon-btn:hover {
+    background: var(--hover-bg, var(--accent-light));
+    border-color: var(--accent-purple);
+}
+
+/* Estados do microfone */
+.icon-btn.recording {
+    background: #ff4444;
+    border-color: #ff4444;
+    color: white;
+    animation: pulse-red 1.5s infinite;
+}
+
+.icon-btn.processing {
+    background: var(--accent-purple);
+    border-color: var(--accent-purple);
+    color: white;
+    cursor: wait;
+}
+
+@keyframes pulse-red {
+    0% { box-shadow: 0 0 0 0 rgba(255, 68, 68, 0.7); }
+    70% { box-shadow: 0 0 0 10px rgba(255, 68, 68, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(255, 68, 68, 0); }
 }
 
 #user-input {
@@ -520,6 +565,95 @@ body.dark-mode .icon-moon { display: block; }
 
 .feedback.empty {
     display: none;
+}
+
+/* =========================================
+   ESTILOS PARA STT / TTS
+   ========================================= */
+.settings-section {
+    margin-top: 20px;
+}
+
+.group-desc {
+    margin: 8px 0 16px 0;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.checkbox-group {
+    justify-content: center;
+    flex-direction: row;
+    padding-top: 24px;
+}
+
+.form-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.btn-primary {
+    background: var(--accent-purple);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.9rem;
+    transition: var(--transition);
+}
+
+.btn-primary:hover {
+    background: var(--accent-purple-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(111, 66, 193, 0.4);
+}
+
+.btn-secondary {
+    background: transparent;
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    padding: 10px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: var(--transition);
+}
+
+.btn-secondary:hover {
+    border-color: var(--accent-purple);
+    color: var(--accent-purple);
+}
+
+.status-indicator {
+    margin-top: 12px;
+    padding: 10px 14px;
+    background: var(--bg-tertiary);
+    border-radius: 8px;
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.status-indicator .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #ccc;
+}
+
+.status-indicator.loaded .dot { background: #4caf50; }
+.status-indicator.error .dot { background: #f44336; }
+.status-indicator.waiting .dot { background: #ff9800; }
+
+.hint {
+    font-size: 0.75rem;
+    color: var(--text-muted, var(--text-secondary));
+    font-weight: normal;
+    display: block;
+    margin-top: 4px;
 }
 
 /* Responsividade */

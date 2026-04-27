@@ -58,6 +58,7 @@
         chatBox: document.getElementById('chat-box'),
         userInput: document.getElementById('user-input'),
         sendBtn: document.getElementById('send-btn'),
+        recordBtn: document.getElementById('record-btn'),
         processingIndicator: document.getElementById('processing-indicator'),
         
         // Configurações
@@ -68,7 +69,17 @@
         temperatureInput: document.getElementById('temperature'),
         tempValue: document.getElementById('temp-value'),
         maxTokensInput: document.getElementById('max-tokens'),
-        feedback: document.getElementById('feedback')
+        feedback: document.getElementById('feedback'),
+        
+        // STT Settings
+        sttModel: document.getElementById('stt-model'),
+        sttCompute: document.getElementById('stt-compute'),
+        sttBeam: document.getElementById('stt-beam'),
+        sttBeamVal: document.getElementById('val-beam'),
+        sttAutoLang: document.getElementById('stt-auto-lang'),
+        btnSaveStt: document.getElementById('btn-save-stt'),
+        btnUnloadStt: document.getElementById('btn-unload-stt'),
+        sttStatus: document.getElementById('stt-status')
     };
 
     // ==========================================
@@ -265,6 +276,246 @@
         elements.chatBox.scrollTop = elements.chatBox.scrollHeight;
     }
 
+    // ==========================================
+    // SPEECH-TO-TEXT (STT)
+    // ==========================================
+    
+    let mediaRecorder = null;
+    let audioChunks = [];
+    let isRecording = false;
+    
+    /**
+     * Inicia gravação de áudio
+     */
+    async function startRecording() {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            mediaRecorder = new MediaRecorder(stream);
+            audioChunks = [];
+
+            mediaRecorder.ondataavailable = (event) => {
+                audioChunks.push(event.data);
+            };
+
+            mediaRecorder.onstop = async () => {
+                const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                const wavBuffer = await convertToWav(audioBlob);
+                sendToStt(wavBuffer);
+            };
+
+            mediaRecorder.start();
+            isRecording = true;
+            if (elements.recordBtn) {
+                elements.recordBtn.classList.add('recording');
+                elements.recordBtn.title = "Parar gravação";
+            }
+        } catch (err) {
+            console.error("Erro ao acessar microfone:", err);
+            showFeedback("Permissão de microfone negada ou erro de hardware.", "error");
+        }
+    }
+    
+    /**
+     * Para gravação de áudio
+     */
+    function stopRecording() {
+        if (mediaRecorder && isRecording) {
+            mediaRecorder.stop();
+            mediaRecorder.stream.getTracks().forEach(track => track.stop());
+            isRecording = false;
+            if (elements.recordBtn) {
+                elements.recordBtn.classList.remove('recording');
+                elements.recordBtn.classList.add('processing');
+                elements.recordBtn.title = "Processando...";
+            }
+        }
+    }
+    
+    /**
+     * Converte blob de áudio para WAV 16kHz mono
+     */
+    async function convertToWav(blob) {
+        const arrayBuffer = await blob.arrayBuffer();
+        const audioContext = new AudioContext({ sampleRate: 16000 });
+        const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+        
+        const channelData = audioBuffer.getChannelData(0);
+        const wavBuffer = encodeWAV(channelData, audioContext.sampleRate);
+        
+        audioContext.close();
+        return wavBuffer;
+    }
+    
+    /**
+     * Codifica amostras de áudio em formato WAV
+     */
+    function encodeWAV(samples, sampleRate) {
+        const buffer = new ArrayBuffer(44 + samples.length * 2);
+        const view = new DataView(buffer);
+
+        writeString(view, 0, 'RIFF');
+        view.setUint32(4, 36 + samples.length * 2, true);
+        writeString(view, 8, 'WAVE');
+        writeString(view, 12, 'fmt ');
+        view.setUint32(16, 16, true);
+        view.setUint16(20, 1, true);
+        view.setUint16(22, 1, true);
+        view.setUint32(24, sampleRate, true);
+        view.setUint32(28, sampleRate * 2, true);
+        view.setUint16(32, 2, true);
+        view.setUint16(34, 16, true);
+        writeString(view, 36, 'data');
+        view.setUint32(40, samples.length * 2, true);
+        
+        let offset = 44;
+        for (let i = 0; i < samples.length; i++) {
+            const s = Math.max(-1, Math.min(1, samples[i]));
+            view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+            offset += 2;
+        }
+        
+        return new Uint8Array(buffer);
+    }
+    
+    function writeString(view, offset, string) {
+        for (let i = 0; i < string.length; i++) {
+            view.setUint8(offset + i, string.charCodeAt(i));
+        }
+    }
+    
+    /**
+     * Envia áudio para transcrição no backend
+     */
+    async function sendToStt(wavBuffer) {
+        const formData = new FormData();
+        const blob = new Blob([wavBuffer], { type: 'audio/wav' });
+        formData.append('file', blob, 'recording.wav');
+        
+        const config = getSttConfigFromUI();
+        formData.append('config', JSON.stringify(config));
+
+        try {
+            const response = await fetch('/api/stt/transcribe', {
+                method: 'POST',
+                body: formData
+            });
+
+            if (!response.ok) throw new Error('Falha na transcrição');
+            
+            const result = await response.json();
+            
+            if (result.text && elements.userInput) {
+                elements.userInput.value = result.text;
+                elements.userInput.focus();
+                showFeedback(`Transcrito (${result.language}): ${result.text.substring(0, 50)}...`, "success");
+            } else {
+                showFeedback("Nenhum áudio detectado.", "error");
+            }
+        } catch (error) {
+            console.error(error);
+            showFeedback("Erro ao transcrever áudio. Verifique configurações.", "error");
+        } finally {
+            if (elements.recordBtn) {
+                elements.recordBtn.classList.remove('processing');
+                elements.recordBtn.title = "Clique para falar";
+            }
+        }
+    }
+    
+    function getSttConfigFromUI() {
+        return {
+            model_size: elements.sttModel?.value || 'base',
+            compute_type: elements.sttCompute?.value || 'default',
+            beam_size: parseInt(elements.sttBeam?.value) || 5,
+            language: elements.sttAutoLang?.checked ? 'auto' : 'pt',
+            temperature: 0.0
+        };
+    }
+    
+    function saveSttSettings() {
+        const config = getSttConfigFromUI();
+        localStorage.setItem('shogun_stt_config', JSON.stringify(config));
+    }
+    
+    function loadSttSettings() {
+        const saved = localStorage.getItem('shogun_stt_config');
+        if (saved) {
+            const config = JSON.parse(saved);
+            if (elements.sttModel) elements.sttModel.value = config.model_size || 'base';
+            if (elements.sttCompute) elements.sttCompute.value = config.compute_type || 'default';
+            if (elements.sttBeam) {
+                elements.sttBeam.value = config.beam_size || 5;
+                if (elements.sttBeamVal) elements.sttBeamVal.textContent = config.beam_size || 5;
+            }
+            if (elements.sttAutoLang) elements.sttAutoLang.checked = config.auto_lang !== false;
+        }
+    }
+    
+    function updateSttStatus(loaded, modelName, error = false) {
+        if (!elements.sttStatus) return;
+        
+        const textSpan = elements.sttStatus.querySelector('.text');
+        elements.sttStatus.className = 'status-indicator';
+        
+        if (error) {
+            elements.sttStatus.classList.add('error');
+            textSpan.textContent = "Erro de conexão ❌";
+        } else if (loaded) {
+            elements.sttStatus.classList.add('loaded');
+            textSpan.textContent = `Modelo carregado: ${modelName} ✅`;
+        } else {
+            elements.sttStatus.classList.add('waiting');
+            textSpan.textContent = "Aguardando uso ⏳";
+        }
+    }
+    
+    async function checkSttStatus() {
+        try {
+            const res = await fetch('/api/stt/status');
+            const data = await res.json();
+            updateSttStatus(data.loaded, data.model_size);
+        } catch (e) {
+            updateSttStatus(false, null, true);
+        }
+    }
+    
+    function initStt() {
+        if (elements.sttBeam && elements.sttBeamVal) {
+            elements.sttBeam.addEventListener('input', (e) => {
+                elements.sttBeamVal.textContent = e.target.value;
+            });
+        }
+        
+        if (elements.recordBtn) {
+            elements.recordBtn.addEventListener('click', () => {
+                if (isRecording) {
+                    stopRecording();
+                } else {
+                    startRecording();
+                }
+            });
+        }
+        
+        if (elements.btnSaveStt) {
+            elements.btnSaveStt.addEventListener('click', () => {
+                saveSttSettings();
+                checkSttStatus();
+                showFeedback("Configurações de STT salvas!", "success");
+            });
+        }
+        
+        if (elements.btnUnloadStt) {
+            elements.btnUnloadStt.addEventListener('click', async () => {
+                await fetch('/api/stt/unload', { method: 'POST' });
+                updateSttStatus(false, null);
+                showFeedback("Modelo descarregado da memória.", "success");
+            });
+        }
+        
+        loadSttSettings();
+        checkSttStatus();
+    }
+
     /**
      * Envia mensagem para a API de chat
      */
@@ -362,6 +613,7 @@
         // Inicializa componentes
         initSidemenu();
         initConfigForm();
+        initStt();  // Inicializa STT
         initChat();
         
         // Carrega configurações salvas
