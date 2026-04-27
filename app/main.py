@@ -11,10 +11,12 @@ from pathlib import Path
 from typing import Any
 
 import httpx
-from fastapi import FastAPI, Request, HTTPException
+from fastapi import FastAPI, Request, HTTPException, UploadFile, File, Form
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel, Field, field_validator
+
+from backend.stt import stt_engine
 
 # Configuração de logs
 logging.basicConfig(level=logging.INFO)
@@ -80,6 +82,15 @@ class ChatMessage(BaseModel):
 class ChatInput(BaseModel):
     """Modelo de entrada para o endpoint de chat."""
     messages: list[ChatMessage] = Field(..., description="Histórico de mensagens")
+
+
+class STTConfig(BaseModel):
+    """Modelo de configuração para STT."""
+    model_size: str = "base"
+    compute_type: str = "default"
+    beam_size: int = 5
+    language: str = "auto"
+    temperature: float = 0.0
 
 
 # Inicializa a aplicação FastAPI
@@ -249,6 +260,73 @@ async def chat(chat_input: ChatInput):
             status_code=500,
             content={"error": f"Erro interno: {str(e)}"}
         )
+
+
+# ==========================================
+# ROTAS DE SPEECH-TO-TEXT (STT)
+# ==========================================
+
+@app.post("/api/stt/transcribe")
+async def transcribe_audio(
+    file: UploadFile = File(...),
+    config: str = Form("{}")
+):
+    """
+    Endpoint POST /api/stt/transcribe:
+    - Recebe arquivo de áudio (WAV) via multipart/form-data
+    - Recebe configurações em JSON string via form field 'config'
+    - Retorna texto transcrito, idioma detectado e duração
+    
+    Configurações suportadas:
+    - model_size: tiny, base, small, medium, large-v3
+    - compute_type: int8, float16, default
+    - beam_size: 1-10 (precisão vs velocidade)
+    - language: auto, pt, en, etc.
+    - temperature: 0.0-1.0
+    """
+    import json as json_module
+    
+    try:
+        config_dict = json_module.loads(config)
+    except json_module.JSONDecodeError:
+        config_dict = {}
+
+    # Validação básica do arquivo
+    if not file.content_type or not file.content_type.startswith("audio/"):
+        raise HTTPException(status_code=400, detail="Arquivo deve ser áudio.")
+
+    audio_bytes = await file.read()
+    if len(audio_bytes) == 0:
+        raise HTTPException(status_code=400, detail="Arquivo de áudio vazio.")
+
+    result = await stt_engine.transcribe(audio_bytes, config_dict)
+    return result
+
+
+@app.post("/api/stt/unload")
+async def unload_stt_model():
+    """
+    Endpoint POST /api/stt/unload:
+    - Libera a memória VRAM/RAM usada pelo modelo Whisper
+    - Útil para economizar recursos quando não estiver em uso
+    """
+    stt_engine.unload_model()
+    return {"status": "success", "message": "Modelo STT descarregado."}
+
+
+@app.get("/api/stt/status")
+async def get_stt_status():
+    """
+    Endpoint GET /api/stt/status:
+    - Verifica se o modelo está carregado e qual modelo
+    - Retorna status para a UI mostrar indicador
+    """
+    is_loaded = stt_engine.model is not None
+    return {
+        "loaded": is_loaded,
+        "model_size": stt_engine.current_model_size,
+        "compute_type": stt_engine.compute_type
+    }
 
 
 if __name__ == "__main__":

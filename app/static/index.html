@@ -65,6 +65,9 @@
                 </div>
                 <!-- Área de input fixa no rodapé -->
                 <div class="input-area">
+                    <button id="record-btn" class="icon-btn" type="button" aria-label="Gravar áudio" title="Clique para falar">
+                        <span class="mic-icon">🎙️</span>
+                    </button>
                     <input 
                         type="text" 
                         id="user-input" 
@@ -135,6 +138,64 @@
 
                     <button type="submit" id="save-config-btn">Salvar Configurações</button>
                 </form>
+                
+                <!-- Section TTS / STT -->
+                <section class="settings-section">
+                    <fieldset class="group-box">
+                        <legend>🎙️ TTS / STT (Faster Whisper)</legend>
+                        <p class="group-desc">Configure o motor de reconhecimento de voz local.</p>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="stt-model">Modelo Whisper</label>
+                                <select id="stt-model">
+                                    <option value="tiny">Tiny (Rápido, ~40MB)</option>
+                                    <option value="base" selected>Base (Equilibrado, ~70MB)</option>
+                                    <option value="small">Small (Preciso, ~240MB)</option>
+                                    <option value="medium">Medium (Muito Preciso, ~760MB)</option>
+                                    <option value="large-v3">Large-v3 (Máximo, ~1.5GB)</option>
+                                </select>
+                                <small class="hint">Menor = mais rápido. Maior = mais preciso.</small>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="stt-compute">Computação</label>
+                                <select id="stt-compute">
+                                    <option value="default">Automático</option>
+                                    <option value="int8">Int8 (CPU Rápido)</option>
+                                    <option value="float16">Float16 (GPU)</option>
+                                </select>
+                                <small class="hint">Use Int8 para CPUs sem GPU dedicada.</small>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="stt-beam">Beam Size: <span id="val-beam">5</span></label>
+                                <input type="range" id="stt-beam" min="1" max="10" value="5">
+                                <small class="hint">Maior = mais preciso, mas lento.</small>
+                            </div>
+                            
+                            <div class="form-group checkbox-group">
+                                <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+                                    <input type="checkbox" id="stt-auto-lang" checked>
+                                    Detectar Idioma Automaticamente
+                                </label>
+                                <small class="hint">Se desmarcado, usará Português (pt).</small>
+                            </div>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="button" id="btn-save-stt" class="btn-primary">Aplicar Configurações</button>
+                            <button type="button" id="btn-unload-stt" class="btn-secondary">Descarregar Modelo (Liberar RAM)</button>
+                        </div>
+                        
+                        <div id="stt-status" class="status-indicator">
+                            <span class="dot"></span> <span class="text">Aguardando uso ⏳</span>
+                        </div>
+                    </fieldset>
+                </section>
+                
                 <div id="feedback" class="feedback" role="status" aria-live="polite"></div>
             </section>
         </main>

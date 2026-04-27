@@ -16,6 +16,7 @@ node_modules/
 .zig-cache/
 .mypy_cache/
 .pytest_cache/
+.gradle/
 
 # Logs and temp files
 *.log
