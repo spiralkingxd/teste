@@ -41,9 +41,9 @@
                     <span class="icon">💬</span>
                     <span class="label">Chat</span>
                 </button>
-                <button class="sidemenu-btn" data-panel="config" aria-label="Ir para Configurações">
-                    <span class="icon">⚙️</span>
-                    <span class="label">Configurações</span>
+                <button class="sidemenu-btn" data-panel="config" aria-label="Ir para Cérebro">
+                    <span class="icon">🧠</span>
+                    <span class="label">Cérebro</span>
                 </button>
             </nav>
             <div class="sidemenu-footer">
@@ -84,11 +84,14 @@
             <!-- Painel Configurações -->
             <section id="config-panel" class="panel" role="tabpanel" aria-labelledby="config-tab">
                 <div class="panel-header">
-                    <h1>⚙️ Configurações</h1>
+                    <h1>🧠 Cérebro</h1>
                 </div>
                 <form id="config-form" class="config-form">
+                    <fieldset class="config-groupbox">
+                        <legend>LLM Principal</legend>
+                    
                     <div class="form-group">
-                        <label for="base-url">Base URL</label>
+                        <label for="base-url">Provedor/Base URL</label>
                         <input 
                             type="url" 
                             id="base-url" 
@@ -99,22 +102,22 @@
                     </div>
 
                     <div class="form-group">
-                        <label for="model">Modelo</label>
-                        <input 
-                            type="text" 
-                            id="model" 
-                            name="model" 
-                            placeholder="nome-do-modelo"
-                        >
-                    </div>
-
-                    <div class="form-group">
                         <label for="api-key">API Key</label>
                         <input 
                             type="password" 
                             id="api-key" 
                             name="api_key" 
                             placeholder="Sua chave de API"
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label for="model">Modelo</label>
+                        <input 
+                            type="text" 
+                            id="model" 
+                            name="model" 
+                            placeholder="nome-do-modelo"
                         >
                     </div>
 
@@ -130,18 +133,7 @@
                             value="0.7"
                         >
                     </div>
-
-                    <div class="form-group">
-                        <label for="max-tokens">Max Tokens</label>
-                        <input 
-                            type="number" 
-                            id="max-tokens" 
-                            name="max_tokens" 
-                            min="1" 
-                            max="8192" 
-                            value="1024"
-                        >
-                    </div>
+                    </fieldset>
 
                     <button type="submit" id="save-config-btn">Salvar Configurações</button>
                 </form>

@@ -380,6 +380,21 @@ body.dark-mode .icon-moon { display: block; }
     border: 1px solid var(--border-color);
 }
 
+/* GroupBox (fieldset) */
+.config-groupbox {
+    border: 2px solid var(--border-color);
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 8px;
+}
+
+.config-groupbox legend {
+    font-weight: 700;
+    color: var(--accent-purple);
+    font-size: 1rem;
+    padding: 0 8px;
+}
+
 .form-group {
     display: flex;
     flex-direction: column;
