@@ -1,13 +1,13 @@
 """
-Módulo de Speech-to-Text usando Faster Whisper.
-Implementação com carregamento lazy e gerenciamento de memória.
+Módulo de Speech-to-Text usando FFmpeg via subprocess + Whisper CLI.
+Implementação com subprocess do FFmpeg para pré-processamento de áudio.
 """
 
 import logging
-import io
+import subprocess
+import tempfile
+import os
 from typing import Optional, Dict, Any
-
-from faster_whisper import WhisperModel
 from fastapi import HTTPException
 
 logger = logging.getLogger("shogun.stt")
@@ -15,103 +15,176 @@ logger = logging.getLogger("shogun.stt")
 
 class STTEngine:
     """
-    Motor de STT com Faster Whisper.
-    Singleton que gerencia carregamento e processamento de modelos.
+    Motor de STT usando FFmpeg via subprocess + Whisper.
+    Usa FFmpeg para pré-processamento e Whisper para transcrição.
     """
     
     def __init__(self):
-        self.model: Optional[WhisperModel] = None
-        self.current_model_size: Optional[str] = None
-        self.compute_type: str = "default"
+        self.model_size: Optional[str] = None
+        self.language: Optional[str] = None
 
-    def load_model(self, model_size: str = "base", compute_type: str = "default") -> bool:
+    def _preprocess_audio_with_ffmpeg(self, audio_data: bytes, output_path: str) -> bool:
         """
-        Carrega o modelo de forma lazy. Se já estiver carregado com o mesmo tamanho, ignora.
+        Usa FFmpeg via subprocess para converter/normalizar áudio para formato compatível.
         
         Args:
-            model_size: Tamanho do modelo (tiny, base, small, medium, large-v3)
-            compute_type: Tipo de computação (int8, float16, default)
+            audio_data: Bytes do arquivo de áudio original
+            output_path: Caminho para o arquivo de saída
             
         Returns:
-            True se carregado com sucesso
+            True se sucesso
         """
-        if self.model and self.current_model_size == model_size and self.compute_type == compute_type:
-            logger.info(f"Modelo {model_size} já está carregado.")
-            return True
-
-        self.unload_model()  # Descarrega anterior se houver
-        
         try:
-            logger.info(f"Carregando modelo Whisper: {model_size} ({compute_type})...")
-            # device="auto" detecta CUDA automaticamente
-            # compute_type="int8" acelera em CPU, "float16" em GPU
-            self.model = WhisperModel(model_size, device="auto", compute_type=compute_type)
-            self.current_model_size = model_size
-            self.compute_type = compute_type
-            logger.info(f"Modelo {model_size} carregado com sucesso.")
-            return True
+            # Cria arquivo temporário de entrada
+            with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp_input:
+                tmp_input.write(audio_data)
+                tmp_input_path = tmp_input.name
+            
+            try:
+                # Comando FFmpeg para converter para WAV 16kHz mono (formato ideal para Whisper)
+                ffmpeg_cmd = [
+                    "ffmpeg",
+                    "-y",  # Sobrescrever saída sem perguntar
+                    "-i", tmp_input_path,  # Entrada
+                    "-ar", "16000",  # Sample rate 16kHz
+                    "-ac", "1",  # Mono
+                    "-f", "wav",  # Formato WAV
+                    "-acodec", "pcm_s16le",  # Codec PCM 16-bit
+                    output_path  # Saída
+                ]
+                
+                logger.debug(f"Executando FFmpeg: {' '.join(ffmpeg_cmd)}")
+                
+                result = subprocess.run(
+                    ffmpeg_cmd,
+                    capture_output=True,
+                    text=True,
+                    timeout=60
+                )
+                
+                if result.returncode != 0:
+                    logger.error(f"FFmpeg falhou: {result.stderr}")
+                    raise Exception(f"FFmpeg error: {result.stderr}")
+                
+                logger.debug("FFmpeg processamento concluído com sucesso.")
+                return True
+                
+            finally:
+                # Limpa arquivo temporário de entrada
+                if os.path.exists(tmp_input_path):
+                    os.unlink(tmp_input_path)
+                    
+        except subprocess.TimeoutExpired:
+            logger.error("Timeout no processamento FFmpeg")
+            raise HTTPException(status_code=500, detail="Timeout no processamento de áudio")
         except Exception as e:
-            logger.error(f"Falha ao carregar modelo: {e}")
-            raise HTTPException(status_code=500, detail=f"Erro ao carregar modelo STT: {str(e)}")
-
-    def unload_model(self) -> None:
-        """Libera memória VRAM/RAM descarregando o modelo."""
-        if self.model:
-            del self.model
-            self.model = None
-            self.current_model_size = None
-            logger.info("Modelo STT descarregado da memória.")
+            logger.error(f"Erro no FFmpeg: {e}")
+            raise HTTPException(status_code=500, detail=f"Erro no pré-processamento de áudio: {str(e)}")
 
     async def transcribe(self, audio_data: bytes, config: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Processa áudio e retorna transcrição.
+        Processa áudio usando FFmpeg via subprocess e retorna transcrição.
         
         Args:
-            audio_data: Bytes do arquivo WAV
-            config: Dicionário com configurações (model_size, beam_size, language, etc.)
+            audio_data: Bytes do arquivo de áudio
+            config: Dicionário com configurações (model_size, language, etc.)
             
         Returns:
-            Dicionário com texto, idioma detectado, duração e segmentos
+            Dicionário com texto, idioma detectado, duração e metadados
         """
-        if not self.model:
-            # Tenta carregar com configs se não estiver carregado
-            self.load_model(config.get("model_size", "base"), config.get("compute_type", "default"))
+        model_size = config.get("model_size", "base")
+        language = config.get("language", None)
         
-        if not self.model:
-            raise HTTPException(status_code=503, detail="Modelo STT não disponível.")
-
+        # Determinar idioma para Whisper (None = auto detect)
+        whisper_lang = None if language in [None, "auto"] else language
+        
+        temp_file = None
         try:
-            # Converter bytes para stream que o whisper aceita
-            audio_stream = io.BytesIO(audio_data)
+            # Criar arquivo temporário para áudio processado
+            with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
+                temp_file = tmp.name
             
-            # Parâmetros de inferência
-            beam_size = int(config.get("beam_size", 5))
-            language = config.get("language", None)  # None = auto detect
-            temperature = float(config.get("temperature", 0.0))
-
-            logger.debug(f"Transcrevendo com beam_size={beam_size}, lang={language}")
-
-            segments, info = self.model.transcribe(
-                audio_stream,
-                beam_size=beam_size,
-                language=language if language != "auto" else None,
-                temperature=temperature,
-                vad_filter=True  # Filtro de voz ativo para melhor performance
+            # Pré-processar áudio com FFmpeg
+            self._preprocess_audio_with_ffmpeg(audio_data, temp_file)
+            
+            # Construir comando Whisper CLI
+            whisper_cmd = [
+                "whisper",
+                temp_file,
+                "--model", model_size,
+                "--output_format", "json",
+                "--no_print_progress"
+            ]
+            
+            if whisper_lang:
+                whisper_cmd.extend(["--language", whisper_lang])
+            
+            logger.debug(f"Executando Whisper: {' '.join(whisper_cmd)}")
+            
+            result = subprocess.run(
+                whisper_cmd,
+                capture_output=True,
+                text=True,
+                timeout=300
             )
-
-            text = " ".join([segment.text for segment in segments]).strip()
+            
+            if result.returncode != 0:
+                logger.error(f"Whisper falhou: {result.stderr}")
+                raise Exception(f"Whisper error: {result.stderr}")
+            
+            # Parse do output JSON do Whisper
+            import json
+            output_path = temp_file + ".json"
+            
+            if not os.path.exists(output_path):
+                # Tenta encontrar o arquivo JSON em outros locais possíveis
+                base_name = os.path.splitext(temp_file)[0]
+                output_path = base_name + ".json"
+            
+            if os.path.exists(output_path):
+                with open(output_path, 'r', encoding='utf-8') as f:
+                    transcript_data = json.load(f)
+                
+                text = transcript_data.get("text", "").strip()
+                language_detected = transcript_data.get("language", "unknown")
+                
+                # Calcular duração aproximada
+                duration = 0.0
+                if "segments" in transcript_data and transcript_data["segments"]:
+                    last_segment = transcript_data["segments"][-1]
+                    duration = last_segment.get("end", 0.0)
+                
+                # Limpar arquivo JSON
+                if os.path.exists(output_path):
+                    os.unlink(output_path)
+                
+            else:
+                # Fallback: usar stdout se JSON não foi criado
+                text = result.stdout.strip()
+                language_detected = whisper_lang or "auto"
+                duration = 0.0
             
             return {
                 "text": text,
-                "language": info.language,
-                "language_probability": info.language_probability,
-                "duration": info.duration,
-                "all_language_probs": list(info.all_language_probs)[:5]  # Top 5 idiomas
+                "language": language_detected,
+                "language_probability": 1.0,
+                "duration": duration,
+                "all_language_probs": []
             }
-
+            
+        except subprocess.TimeoutExpired:
+            logger.error("Timeout na transcrição")
+            raise HTTPException(status_code=500, detail="Timeout na transcrição de áudio")
         except Exception as e:
             logger.error(f"Erro na transcrição: {e}")
             raise HTTPException(status_code=500, detail=f"Falha na transcrição: {str(e)}")
+        finally:
+            # Limpeza de arquivos temporários
+            if temp_file and os.path.exists(temp_file):
+                os.unlink(temp_file)
+            json_path = temp_file + ".json" if temp_file else None
+            if json_path and os.path.exists(json_path):
+                os.unlink(json_path)
 
 
 # Singleton instance
