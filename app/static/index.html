@@ -7,100 +7,119 @@
     <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-    <div class="container">
-        <!-- Navegação por abas -->
-        <nav class="tabs" role="tablist">
-            <button class="tab-btn active" data-tab="chat" role="tab" aria-selected="true" aria-controls="chat-panel">
-                💬 Chat
-            </button>
-            <button class="tab-btn" data-tab="config" role="tab" aria-selected="false" aria-controls="config-panel">
-                ⚙️ Configurações
-            </button>
-        </nav>
+    <div class="app-container">
+        <!-- Sidemenu -->
+        <aside class="sidemenu">
+            <div class="sidemenu-header">
+                <h2>🤖 Assistente IA</h2>
+            </div>
+            <nav class="sidemenu-nav">
+                <button class="sidemenu-btn active" data-panel="chat" aria-label="Ir para Chat">
+                    <span class="icon">💬</span>
+                    <span class="label">Chat</span>
+                </button>
+                <button class="sidemenu-btn" data-panel="config" aria-label="Ir para Configurações">
+                    <span class="icon">⚙️</span>
+                    <span class="label">Configurações</span>
+                </button>
+            </nav>
+            <div class="sidemenu-footer">
+                <p>v1.0.0</p>
+            </div>
+        </aside>
 
-        <!-- Painel Chat -->
-        <section id="chat-panel" class="tab-panel active" role="tabpanel" aria-labelledby="chat-tab">
-            <div id="chat-box" class="chat-box" aria-live="polite">
-                <!-- Mensagens serão inseridas aqui -->
-            </div>
-            <div id="processing-indicator" class="processing-indicator hidden">
-                Processando...
-            </div>
-            <div class="input-area">
-                <input 
-                    type="text" 
-                    id="user-input" 
-                    placeholder="Digite sua mensagem..." 
-                    aria-label="Campo de mensagem"
-                    autocomplete="off"
-                >
-                <button id="send-btn" type="button" aria-label="Enviar mensagem">Enviar</button>
-            </div>
-        </section>
-
-        <!-- Painel Configurações -->
-        <section id="config-panel" class="tab-panel" role="tabpanel" aria-labelledby="config-tab">
-            <form id="config-form" class="config-form">
-                <div class="form-group">
-                    <label for="base-url">Base URL</label>
-                    <input 
-                        type="url" 
-                        id="base-url" 
-                        name="base_url" 
-                        placeholder="http://localhost:1234/v1"
-                        required
-                    >
+        <!-- Conteúdo Principal -->
+        <main class="main-content">
+            <!-- Painel Chat -->
+            <section id="chat-panel" class="panel active" role="tabpanel" aria-labelledby="chat-tab">
+                <div class="panel-header">
+                    <h1>💬 Chat</h1>
                 </div>
-
-                <div class="form-group">
-                    <label for="model">Modelo</label>
+                <div id="chat-box" class="chat-box" aria-live="polite">
+                    <!-- Mensagens serão inseridas aqui -->
+                </div>
+                <div id="processing-indicator" class="processing-indicator hidden">
+                    Processando...
+                </div>
+                <div class="input-area">
                     <input 
                         type="text" 
-                        id="model" 
-                        name="model" 
-                        placeholder="nome-do-modelo"
+                        id="user-input" 
+                        placeholder="Digite sua mensagem..." 
+                        aria-label="Campo de mensagem"
+                        autocomplete="off"
                     >
+                    <button id="send-btn" type="button" aria-label="Enviar mensagem">Enviar</button>
                 </div>
+            </section>
 
-                <div class="form-group">
-                    <label for="api-key">API Key</label>
-                    <input 
-                        type="password" 
-                        id="api-key" 
-                        name="api_key" 
-                        placeholder="Sua chave de API"
-                    >
+            <!-- Painel Configurações -->
+            <section id="config-panel" class="panel" role="tabpanel" aria-labelledby="config-tab">
+                <div class="panel-header">
+                    <h1>⚙️ Configurações</h1>
                 </div>
+                <form id="config-form" class="config-form">
+                    <div class="form-group">
+                        <label for="base-url">Base URL</label>
+                        <input 
+                            type="url" 
+                            id="base-url" 
+                            name="base_url" 
+                            placeholder="http://localhost:1234/v1"
+                            required
+                        >
+                    </div>
 
-                <div class="form-group">
-                    <label for="temperature">Temperatura: <span id="temp-value">0.7</span></label>
-                    <input 
-                        type="range" 
-                        id="temperature" 
-                        name="temperature" 
-                        min="0.0" 
-                        max="1.0" 
-                        step="0.1" 
-                        value="0.7"
-                    >
-                </div>
+                    <div class="form-group">
+                        <label for="model">Modelo</label>
+                        <input 
+                            type="text" 
+                            id="model" 
+                            name="model" 
+                            placeholder="nome-do-modelo"
+                        >
+                    </div>
 
-                <div class="form-group">
-                    <label for="max-tokens">Max Tokens</label>
-                    <input 
-                        type="number" 
-                        id="max-tokens" 
-                        name="max_tokens" 
-                        min="1" 
-                        max="8192" 
-                        value="1024"
-                    >
-                </div>
+                    <div class="form-group">
+                        <label for="api-key">API Key</label>
+                        <input 
+                            type="password" 
+                            id="api-key" 
+                            name="api_key" 
+                            placeholder="Sua chave de API"
+                        >
+                    </div>
 
-                <button type="submit" id="save-config-btn">Salvar Configurações</button>
-            </form>
-            <div id="feedback" class="feedback" role="status" aria-live="polite"></div>
-        </section>
+                    <div class="form-group">
+                        <label for="temperature">Temperatura: <span id="temp-value">0.7</span></label>
+                        <input 
+                            type="range" 
+                            id="temperature" 
+                            name="temperature" 
+                            min="0.0" 
+                            max="1.0" 
+                            step="0.1" 
+                            value="0.7"
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label for="max-tokens">Max Tokens</label>
+                        <input 
+                            type="number" 
+                            id="max-tokens" 
+                            name="max_tokens" 
+                            min="1" 
+                            max="8192" 
+                            value="1024"
+                        >
+                    </div>
+
+                    <button type="submit" id="save-config-btn">Salvar Configurações</button>
+                </form>
+                <div id="feedback" class="feedback" role="status" aria-live="polite"></div>
+            </section>
+        </main>
     </div>
     <script src="/static/app.js"></script>
 </body>
