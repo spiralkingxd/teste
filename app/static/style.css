@@ -1,21 +1,59 @@
-/* Variáveis CSS para tema consistente */
+/* =========================================
+   VARIÁVEIS CSS PARA TEMA CONSISTENTE
+   Paleta de cores com tons de roxo como accent
+   ========================================= */
 :root {
-    --bg: #f0f2f5;
-    --card: #ffffff;
-    --primary: #4f46e5;
-    --primary-hover: #4338ca;
-    --text: #1f2937;
-    --text-muted: #6b7280;
-    --border: #e5e7eb;
-    --user-msg-bg: #4f46e5;
+    /* Tema Claro (Padrão) */
+    --bg-primary: #f8f9fa;
+    --bg-secondary: #ffffff;
+    --bg-tertiary: #e9ecef;
+    --text-primary: #212529;
+    --text-secondary: #495057;
+    --border-color: #dee2e6;
+    
+    /* Paleta Roxa (Accent) - Contraste WCAG AA */
+    --accent-purple: #6f42c1;
+    --accent-purple-hover: #5a32a3;
+    --accent-light: #f3f0fa;
+    --shadow-soft: 0 4px 6px rgba(111, 66, 193, 0.1);
+    
+    /* Cores de Mensagem */
+    --user-msg-bg: #6f42c1;
     --user-msg-text: #ffffff;
     --assistant-msg-bg: #f3f4f6;
     --assistant-msg-text: #1f2937;
+    
+    /* Status */
     --success: #10b981;
     --error: #ef4444;
-    --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-    --transition: all 0.3s ease;
+    
+    /* Layout */
     --sidemenu-width: 260px;
+    --transition: all 0.3s ease;
+}
+
+/* =========================================
+   TEMA ESCURO
+   ========================================= */
+body.dark-mode {
+    --bg-primary: #121212;
+    --bg-secondary: #1e1e1e;
+    --bg-tertiary: #2c2c2c;
+    --text-primary: #e0e0e0;
+    --text-secondary: #b0b0b0;
+    --border-color: #444444;
+    
+    /* Ajuste de contraste para modo escuro */
+    --accent-purple: #bb86fc;
+    --accent-purple-hover: #9955e8;
+    --accent-light: #2d2436;
+    --shadow-soft: 0 4px 6px rgba(0, 0, 0, 0.3);
+    
+    /* Cores de Mensagem */
+    --user-msg-bg: #bb86fc;
+    --user-msg-text: #000000;
+    --assistant-msg-bg: #2c2c2c;
+    --assistant-msg-text: #e0e0e0;
 }
 
 /* Reset básico */
@@ -27,10 +65,11 @@
 
 body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-    background-color: var(--bg);
-    color: var(--text);
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
     min-height: 100vh;
     line-height: 1.6;
+    transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 /* Layout principal com sidemenu */
@@ -42,8 +81,8 @@ body {
 /* Sidemenu */
 .sidemenu {
     width: var(--sidemenu-width);
-    background: var(--card);
-    border-right: 1px solid var(--border);
+    background: var(--bg-secondary);
+    border-right: 1px solid var(--border-color);
     display: flex;
     flex-direction: column;
     position: fixed;
@@ -56,14 +95,47 @@ body {
 
 .sidemenu-header {
     padding: 24px 20px;
-    border-bottom: 1px solid var(--border);
+    border-bottom: 1px solid var(--border-color);
 }
 
 .sidemenu-header h2 {
     font-size: 1.25rem;
-    color: var(--text);
+    color: var(--text-primary);
     font-weight: 700;
 }
+
+/* Toggle de Tema */
+.theme-toggle-container {
+    padding: 1rem;
+    display: flex;
+    justify-content: center;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.theme-btn {
+    background: transparent;
+    border: 2px solid var(--border-color);
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-primary);
+    transition: all 0.2s ease;
+}
+
+.theme-btn:hover {
+    border-color: var(--accent-purple);
+    color: var(--accent-purple);
+    transform: rotate(15deg);
+}
+
+/* Ícones do toggle: mostra apenas um por vez */
+.icon-moon { display: none; }
+body.dark-mode .icon-sun { display: none; }
+body.dark-mode .icon-moon { display: block; }
 
 .sidemenu-nav {
     flex: 1;
@@ -83,20 +155,21 @@ body {
     cursor: pointer;
     font-size: 1rem;
     font-weight: 500;
-    color: var(--text-muted);
+    color: var(--text-secondary);
     transition: var(--transition);
     border-radius: 10px;
     text-align: left;
 }
 
 .sidemenu-btn:hover {
-    background: rgba(79, 70, 229, 0.1);
-    color: var(--primary);
+    background: var(--accent-light);
+    color: var(--accent-purple);
 }
 
 .sidemenu-btn.active {
-    background: var(--primary);
-    color: white;
+    background: var(--accent-light);
+    color: var(--accent-purple);
+    border-left: 4px solid var(--accent-purple);
 }
 
 .sidemenu-btn .icon {
@@ -109,13 +182,13 @@ body {
 
 .sidemenu-footer {
     padding: 16px 20px;
-    border-top: 1px solid var(--border);
+    border-top: 1px solid var(--border-color);
     text-align: center;
 }
 
 .sidemenu-footer p {
     font-size: 0.85rem;
-    color: var(--text-muted);
+    color: var(--text-secondary);
 }
 
 /* Conteúdo Principal */
@@ -125,6 +198,8 @@ body {
     padding: 32px;
     display: flex;
     flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
 }
 
 /* Painéis */
@@ -151,36 +226,50 @@ body {
 
 .panel-header h1 {
     font-size: 1.75rem;
-    color: var(--text);
+    color: var(--text-primary);
     font-weight: 700;
 }
 
-/* Chat Box */
-.chat-box {
-    height: 500px;
+/* =========================================
+   LAYOUT OTIMIZADO DO CHAT
+   Wrapper para scroll vertical adequado
+   ========================================= */
+.chat-wrapper {
+    flex: 1;
     overflow-y: auto;
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 16px;
-    margin-bottom: 16px;
-    background: var(--card);
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    min-height: 0;
+    scroll-behavior: smooth;
 }
 
-.chat-box::-webkit-scrollbar {
+/* Estilização da barra de rolagem */
+.chat-wrapper::-webkit-scrollbar {
     width: 8px;
 }
 
-.chat-box::-webkit-scrollbar-track {
-    background: var(--border);
+.chat-wrapper::-webkit-scrollbar-track {
+    background: var(--bg-primary);
     border-radius: 4px;
 }
 
-.chat-box::-webkit-scrollbar-thumb {
-    background: var(--text-muted);
+.chat-wrapper::-webkit-scrollbar-thumb {
+    background-color: var(--border-color);
     border-radius: 4px;
+}
+
+.chat-wrapper::-webkit-scrollbar-thumb:hover {
+    background-color: var(--accent-purple);
+}
+
+/* Chat Box - agora dentro do wrapper */
+.chat-box {
+    flex: 1;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-height: 0;
 }
 
 /* Mensagens */
@@ -215,7 +304,7 @@ body {
 .processing-indicator {
     text-align: center;
     padding: 12px;
-    color: var(--text-muted);
+    color: var(--text-secondary);
     font-style: italic;
     font-size: 0.9rem;
 }
@@ -228,26 +317,30 @@ body {
 .input-area {
     display: flex;
     gap: 12px;
+    padding-top: 12px;
+    flex-shrink: 0;
 }
 
 #user-input {
     flex: 1;
     padding: 14px 18px;
-    border: 2px solid var(--border);
+    border: 2px solid var(--border-color);
     border-radius: 12px;
     font-size: 1rem;
     transition: var(--transition);
     outline: none;
+    background-color: var(--bg-secondary);
+    color: var(--text-primary);
 }
 
 #user-input:focus {
-    border-color: var(--primary);
-    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
+    border-color: var(--accent-purple);
+    box-shadow: 0 0 0 3px var(--accent-light);
 }
 
 #send-btn {
     padding: 14px 28px;
-    background: var(--primary);
+    background: var(--accent-purple);
     color: white;
     border: none;
     border-radius: 12px;
@@ -258,9 +351,9 @@ body {
 }
 
 #send-btn:hover {
-    background: var(--primary-hover);
+    background: var(--accent-purple-hover);
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.4);
+    box-shadow: 0 4px 12px rgba(111, 66, 193, 0.4);
 }
 
 #send-btn:active {
@@ -268,7 +361,7 @@ body {
 }
 
 #send-btn:disabled {
-    background: var(--text-muted);
+    background: var(--text-secondary);
     cursor: not-allowed;
     transform: none;
 }
@@ -278,10 +371,10 @@ body {
     display: flex;
     flex-direction: column;
     gap: 20px;
-    background: var(--card);
+    background: var(--bg-secondary);
     padding: 24px;
     border-radius: 12px;
-    border: 1px solid var(--border);
+    border: 1px solid var(--border-color);
 }
 
 .form-group {
@@ -292,7 +385,7 @@ body {
 
 .form-group label {
     font-weight: 600;
-    color: var(--text);
+    color: var(--text-primary);
     font-size: 0.95rem;
 }
 
@@ -301,23 +394,25 @@ body {
 .form-group input[type="password"],
 .form-group input[type="number"] {
     padding: 12px 16px;
-    border: 2px solid var(--border);
+    border: 2px solid var(--border-color);
     border-radius: 10px;
     font-size: 1rem;
     transition: var(--transition);
     outline: none;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
 }
 
 .form-group input:focus {
-    border-color: var(--primary);
-    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
+    border-color: var(--accent-purple);
+    box-shadow: 0 0 0 3px var(--accent-light);
 }
 
 .form-group input[type="range"] {
     width: 100%;
     height: 8px;
     border-radius: 4px;
-    background: var(--border);
+    background: var(--border-color);
     outline: none;
     -webkit-appearance: none;
 }
@@ -327,7 +422,7 @@ body {
     width: 20px;
     height: 20px;
     border-radius: 50%;
-    background: var(--primary);
+    background: var(--accent-purple);
     cursor: pointer;
     transition: var(--transition);
 }
@@ -337,13 +432,13 @@ body {
 }
 
 #temp-value {
-    color: var(--primary);
+    color: var(--accent-purple);
     font-weight: 700;
 }
 
 #save-config-btn {
     padding: 14px 28px;
-    background: var(--primary);
+    background: var(--accent-purple);
     color: white;
     border: none;
     border-radius: 12px;
@@ -355,9 +450,9 @@ body {
 }
 
 #save-config-btn:hover {
-    background: var(--primary-hover);
+    background: var(--accent-purple-hover);
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.4);
+    box-shadow: 0 4px 12px rgba(111, 66, 193, 0.4);
 }
 
 /* Feedback */
@@ -393,7 +488,7 @@ body {
         height: auto;
         position: relative;
         border-right: none;
-        border-bottom: 1px solid var(--border);
+        border-bottom: 1px solid var(--border-color);
     }
 
     .sidemenu-nav {
@@ -418,9 +513,15 @@ body {
     .main-content {
         margin-left: 0;
         padding: 20px;
+        height: auto;
+        overflow: visible;
     }
 
-    .chat-box {
+    .panel.active {
+        display: block;
+    }
+
+    .chat-wrapper {
         height: 400px;
     }
 
