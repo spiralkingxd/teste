@@ -6,6 +6,42 @@
     'use strict';
 
     // ==========================================
+    // GERENCIAMENTO DE TEMA (DARK MODE)
+    // ==========================================
+    
+    const THEME_KEY = 'ai_assistant_theme';
+    const body = document.getElementById('app-body') || document.body;
+    const themeToggleBtn = document.getElementById('theme-toggle');
+    
+    /**
+     * Inicializa o tema baseado no localStorage ou preferência do sistema
+     */
+    function initTheme() {
+        const savedTheme = localStorage.getItem(THEME_KEY);
+        const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        
+        if (savedTheme === 'dark' || (!savedTheme && systemPrefersDark)) {
+            body.classList.add('dark-mode');
+        } else {
+            body.classList.remove('dark-mode');
+        }
+    }
+    
+    /**
+     * Alterna entre tema claro e escuro
+     */
+    function toggleTheme() {
+        const isDark = body.classList.toggle('dark-mode');
+        localStorage.setItem(THEME_KEY, isDark ? 'dark' : 'light');
+    }
+    
+    // Inicializa tema imediatamente e adiciona listener
+    initTheme();
+    if (themeToggleBtn) {
+        themeToggleBtn.addEventListener('click', toggleTheme);
+    }
+
+    // ==========================================
     // ESTADO DA APLICAÇÃO
     // ==========================================
     
